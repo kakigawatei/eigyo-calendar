@@ -120,6 +120,7 @@ function defaultStatus(dow){ return (dow===1||dow===3||dow===5||dow===6) ? "open
 
 var now=new Date();
 var Y=now.getFullYear(), M=now.getMonth(); // 表示中の年・月(0始)
+try{ var _vw=localStorage.getItem("eigyocal_view"); if(_vw){ var _pp=_vw.split("-"); Y=parseInt(_pp[0],10); M=parseInt(_pp[1],10); } }catch(e){} // 最後に見ていた月を復元(リロードで今月に戻らない)
 function keyOf(y,m){ return "eigyocal_"+y+"-"+(m+1); }
 function load(y,m){ try{var v=localStorage.getItem(keyOf(y,m));return v?JSON.parse(v):{days:{}};}catch(e){return {days:{}};} }
 function save(y,m,d){ try{localStorage.setItem(keyOf(y,m),JSON.stringify(d));}catch(e){} cloudPush(y,m); }
@@ -215,7 +216,7 @@ function editHours(day){
 function saveHours(day){ var l=el("h_lunch").value.trim(), d=el("h_dinner").value.trim(); if(!l&&!d){ data.days[day]={status:"closed"}; } else { data.days[day]={status:"custom",lunch:l,dinner:d}; } save(Y,M,data); closeModal(); render(); }
 function setDay(day,v){ data.days[day]={status:v}; save(Y,M,data); closeModal(); render(); }
 function clearDay(day){ delete data.days[day]; save(Y,M,data); closeModal(); render(); }
-function chMonth(delta){ M+=delta; if(M<0){M=11;Y--;} if(M>11){M=0;Y++;} data=load(Y,M); render(); cloudPull(Y,M); }
+function chMonth(delta){ M+=delta; if(M<0){M=11;Y--;} if(M>11){M=0;Y++;} try{localStorage.setItem("eigyocal_view",Y+"-"+M);}catch(e){} data=load(Y,M); render(); cloudPull(Y,M); }
 function resetMonth(){ if(!confirm("【"+Y+"年"+(M+1)+"月だけ】の変更をすべて消して、曜日の基本パターン（月水金土=営業／火木日=定休日）に戻します。よろしいですか？\n※他の月には影響しません")) return; data={days:{}}; save(Y,M,data); render(); toast(Y+"年"+(M+1)+"月を基本に戻しました"); }
 function openModal(h){el("modalbox").innerHTML=h;el("modal").classList.add("on");}
 function closeModal(){el("modal").classList.remove("on");}
@@ -298,17 +299,17 @@ async function buildIGCanvas(){
   var gridTop=246;
   // 曜日ヘッダー
   var gx=MG, gw=W-MG*2; var colW=gw/7; var headH=56;
-  ctx.textAlign="center"; ctx.font="800 32px -apple-system,'Hiragino Sans',sans-serif";
-  HEAD.forEach(function(w,i){ var cx=gx+i*colW; if(i===5){ ctx.fillStyle=COL.satfill; ctx.fillRect(cx,gridTop,colW,headH); } ctx.fillStyle=(i===5)?COL.satblue:"#333333"; ctx.fillText(w,cx+colW/2,gridTop+headH*0.68); });
+  ctx.textAlign="center"; ctx.font="800 29px -apple-system,'Hiragino Sans',sans-serif";
+  HEAD.forEach(function(w,i){ var cx=gx+i*colW; if(i===5){ ctx.fillStyle=COL.satfill; ctx.fillRect(cx,gridTop,colW,headH); } ctx.fillStyle=(i===5)?COL.satblue:"#333333"; ctx.fillText(w,cx+colW/2,gridTop+headH*0.66); });
   ctx.fillStyle=COL.grid; ctx.fillRect(gx,gridTop,gw,4); ctx.fillRect(gx,gridTop+headH-3,gw,4);
   // グリッド
   var first=new Date(Y,M,1); var startDow=(first.getDay()+6)%7; var dim=new Date(Y,M+1,0).getDate();
   var weeks=Math.ceil((startDow+dim)/7);
-  var noteH=118; var gridBottom=H-noteH; var rowH=(gridBottom-(gridTop+headH))/weeks;
+  var noteH=150; var gridBottom=H-noteH; var rowH=(gridBottom-(gridTop+headH))/weeks;
   function igBody(cx,cy,lines,bold,redIdx){
-    if(bold){ ctx.font="900 34px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#c1121f"; ctx.fillText(lines[0],cx,cy+10); return; }
-    var lh=30; var sy=cy-((lines.length-1)*lh)/2+8;
-    lines.forEach(function(t,i){ var r=(i===redIdx); ctx.font=(r?"800 ":"600 ")+"22px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle=r?"#c1121f":"#1a1a1a"; ctx.fillText(t,cx,sy+i*lh); });
+    if(bold){ ctx.font="900 30px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#c1121f"; ctx.fillText(lines[0],cx,cy+9); return; }
+    var lh=27; var sy=cy-((lines.length-1)*lh)/2+7;
+    lines.forEach(function(t,i){ var r=(i===redIdx); ctx.font=(r?"800 ":"600 ")+"19px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle=r?"#c1121f":"#1a1a1a"; ctx.fillText(t,cx,sy+i*lh); });
   }
   for(var idx=0;idx<weeks*7;idx++){
     var row=Math.floor(idx/7), col=idx%7; var x=gx+col*colW, y=gridTop+headH+row*rowH;
@@ -317,7 +318,7 @@ async function buildIGCanvas(){
     ctx.fillStyle=COL.grid; ctx.fillRect(x,y,colW,3); if(col>0) ctx.fillRect(x,y,3,rowH);
     if(!valid) continue;
     var st=statusOf(day); var ov=data.days[day]||{};
-    ctx.textAlign="left"; ctx.font="800 26px -apple-system,'Hiragino Sans',sans-serif"; ctx.fillStyle="#333333"; ctx.fillText(String(day),x+12,y+34);
+    ctx.textAlign="left"; ctx.font="800 23px -apple-system,'Hiragino Sans',sans-serif"; ctx.fillStyle="#333333"; ctx.fillText(String(day),x+12,y+32);
     ctx.textAlign="center"; var cx=x+colW/2, cy=y+rowH/2+16;
     if(st==="custom"){ var ls=[]; if(ov.lunch)ls.push(ov.lunch); if(ov.dinner)ls.push(ov.dinner); if(ls.length)igBody(cx,cy,ls,false); else igBody(cx,cy,["休業"],true); }
     else if(st==="open") igBody(cx,cy,[LUNCH,DINNER],false);
@@ -326,10 +327,11 @@ async function buildIGCanvas(){
     else if(st==="closed") igBody(cx,cy,["休業"],true);
     else igBody(cx,cy,["定休日"],true);
   }
-  ctx.fillStyle=COL.grid; ctx.fillRect(gx+gw-4,gridTop,4,gridBottom-gridTop); ctx.fillRect(gx,gridBottom-4,gw,4);
-  // 注意書き
-  ctx.textAlign="left"; ctx.font="500 24px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#555555";
-  ctx.fillText("不定期に休業することがあります。営業日の変更は googleMAP・instagram でお伝えします。", MG, H-46);
+  ctx.fillStyle=COL.grid; ctx.fillRect(gx,gridTop,4,gridBottom-gridTop); ctx.fillRect(gx+gw-4,gridTop,4,gridBottom-gridTop); ctx.fillRect(gx,gridBottom-4,gw,4); // 左・右・下の枠
+  // 注意書き（折返し）
+  ctx.textAlign="left"; ctx.font="500 23px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#555555";
+  var nl=wrapCanvasText(ctx,"不定期に休業することがあります。営業日の変更は googleMAP・instagram でお伝えします。", gw);
+  nl.forEach(function(l,i){ ctx.fillText(l, MG, gridBottom+42+i*32); });
   ctx.strokeStyle=COL.grid; ctx.lineWidth=6; ctx.strokeRect(4,4,W-8,H-8); // 外枠
   return canvas;
 }
