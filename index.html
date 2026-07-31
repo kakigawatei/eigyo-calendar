@@ -82,49 +82,29 @@
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2a2a28;color:#fff;padding:11px 18px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;z-index:80;}
   .toast.on{opacity:.95;}
 
+  /* 印刷は"Canvasで作った横向き画像"を刷る方式に統一（PC/スマホ共通・色や罫線が確実に濃く出る） */
+  #printbox{display:none;}
   @media print{
-    /* 回転はやめ、素直な横レイアウトで用紙いっぱいに刷る。向きは@page landscape＋印刷ダイアログの「方向=横向き」で。 */
-    @page{size:A4 landscape;margin:0;}
-    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;box-sizing:border-box !important;}
-    html,body{background:#fff!important;margin:0!important;padding:0!important;width:100%!important;height:auto!important;overflow:visible!important;}
-    #app{height:auto!important;overflow:visible!important;display:block!important;}
-    .toolbar,.hint,.toast,nav{display:none !important;}
-    .wrap{padding:0!important;margin:0!important;height:auto!important;overflow:visible!important;}
-    .poster{box-shadow:none!important;border:none!important;border-radius:0!important;box-sizing:border-box!important;
-      width:100%!important;height:100vh!important;flex-direction:row !important;aspect-ratio:auto!important;display:flex!important;overflow:hidden!important;}
-    .left{width:23%!important;flex-direction:column !important;align-items:flex-start !important;border-bottom:0 !important;border-right:2px solid var(--gridline) !important;padding:10mm 6mm !important;}
-    .mblock{flex-direction:column !important;align-items:flex-start !important;gap:4px !important;}
-    .mnum{font-size:58px !important;} .men{font-size:13px !important;}
-    .logoimg{width:80% !important;height:auto !important;margin-top:14px !important;}
-    .note{flex-basis:auto !important;margin-top:9mm !important;font-size:15px !important;line-height:1.95 !important;color:#333 !important;font-weight:600 !important;}
-    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-    .whead{border-top:2px solid var(--gridline) !important;border-right:2px solid var(--gridline) !important;}
-    .whead div{font-size:15px !important;font-weight:800 !important;color:#333 !important;padding:7px 0 !important;border-bottom:2px solid var(--gridline) !important;border-left:1.6px solid var(--gridline) !important;}
-    .whead div:first-child{border-left:0 !important;}
-    .whead div:nth-child(6){color:var(--satblue) !important;}
-    .grid{border-right:2px solid var(--gridline) !important;border-bottom:2px solid var(--gridline) !important;grid-auto-rows:1fr !important;min-height:0 !important;box-sizing:border-box !important;overflow:hidden !important;}
-    .right{overflow:hidden !important;box-sizing:border-box !important;}
-    .poster,.left,.cell,.whead,.whead div{box-sizing:border-box !important;}
-    .grid .cell{min-height:0 !important;padding:5px 4px !important;border-top:1.6px solid var(--gridline) !important;border-left:1.6px solid var(--gridline) !important;}
-    .cell:nth-child(7n){border-right:0 !important;}
-    .cell .dnum{font-size:15px !important;font-weight:800 !important;color:#333 !important;} .cell .dnum .hol{display:inline !important;margin-left:4px;font-size:.72em;}
-    .cell .hours{font-size:13.5px !important;line-height:1.45 !important;font-weight:600 !important;color:#1a1a1a !important;} .cell .closed{font-size:19px !important;font-weight:900 !important;} .cell .eve{font-size:13px !important;font-weight:800 !important;}
-    .hf{display:inline !important;} .hm{display:none !important;}
+    @page{size:A4 landscape;margin:6mm;}
+    body>*{display:none !important;}
+    #printbox{display:block !important;}
+    #printbox img{display:block !important;width:100% !important;height:auto !important;}
   }
 </style>
 </head>
 <body>
   <div class="toolbar">
     <div class="mnav"><button class="arw" onclick="chMonth(-1)">‹</button><span id="mlabel"></span><button class="arw" onclick="chMonth(1)">›</button></div>
-    <button onclick="resetMonth()">デフォルトに戻す</button>
     <button class="act" onclick="exportPoster()">📤 スマホで印刷/保存（横）</button>
-    <button onclick="window.print()">🖨 PCで印刷</button>
+    <button onclick="printPoster()">🖨 PCで印刷</button>
     <span id="calsync" style="font-size:11px;opacity:.85">…</span>
   </div>
   <div class="hint">各日をタップ → 営業／夕方休業／休業／定休日 を選べます。基本は月・水・金・土が営業。変更したい日だけ直して「印刷」。</div>
   <div class="wrap"><div class="poster" id="poster"></div></div>
+  <div style="text-align:center;padding:10px 0 26px"><span onclick="resetMonth()" style="font-size:12px;color:#b9b3a5;cursor:pointer;text-decoration:underline;text-underline-offset:2px">この月だけ 曜日の基本パターンに戻す</span></div>
   <div class="modal" id="modal"><div class="box" id="modalbox"></div></div>
   <div class="toast" id="toast"></div>
+  <div id="printbox"></div>
 
 <script>
 /* 営業カレンダー（アブララボ）Phase1 — localStorage・印刷対応 */
@@ -205,7 +185,10 @@ function render(){
     +'<div class="note">不定期に休業することがあります。営業日の変更がありましたら googleMAP・instagram などでお伝えします。</div></div>'
     +'<div class="right"><div class="whead">'+HEAD.map(function(w){return '<div>'+w+'</div>';}).join("")+'</div><div class="grid">'+cells+'</div></div>';
   el("poster").innerHTML=poster;
+  updatePrintImage(); /* ブラウザ標準の印刷(Cmd+P)でも画像が出るよう常に用意 */
 }
+var _printBusy=false;
+function updatePrintImage(){ if(_printBusy)return; _printBusy=true; buildPosterCanvas().then(function(c){ var b=el("printbox"); if(b){ b.innerHTML=""; var img=new Image(); img.src=c.toDataURL("image/png"); b.appendChild(img); } _printBusy=false; }).catch(function(){ _printBusy=false; }); }
 function pick(day){
   var cur=statusOf(day);
   function opt(v,label,cls){return '<button class="opt '+cls+(cur===v?' ':'')+'" onclick="setDay('+day+',\''+v+'\')"><span class="sw"></span>'+label+(cur===v?' ✓':'')+'</button>';}
@@ -232,7 +215,7 @@ function saveHours(day){ var l=el("h_lunch").value.trim(), d=el("h_dinner").valu
 function setDay(day,v){ data.days[day]={status:v}; save(Y,M,data); closeModal(); render(); }
 function clearDay(day){ delete data.days[day]; save(Y,M,data); closeModal(); render(); }
 function chMonth(delta){ M+=delta; if(M<0){M=11;Y--;} if(M>11){M=0;Y++;} data=load(Y,M); render(); cloudPull(Y,M); }
-function resetMonth(){ if(!confirm("この月をデフォルト（月水金土=営業／火木日=定休日）に戻しますか？")) return; data={days:{}}; save(Y,M,data); render(); toast("デフォルトに戻しました"); }
+function resetMonth(){ if(!confirm("【"+Y+"年"+(M+1)+"月だけ】の変更をすべて消して、曜日の基本パターン（月水金土=営業／火木日=定休日）に戻します。よろしいですか？\n※他の月には影響しません")) return; data={days:{}}; save(Y,M,data); render(); toast(Y+"年"+(M+1)+"月を基本に戻しました"); }
 function openModal(h){el("modalbox").innerHTML=h;el("modal").classList.add("on");}
 function closeModal(){el("modal").classList.remove("on");}
 el("modal").addEventListener("click",function(e){if(e.target===this)closeModal();});
@@ -254,7 +237,7 @@ async function buildPosterCanvas(){
   var canvas=document.createElement("canvas"); canvas.width=W; canvas.height=H;
   var ctx=canvas.getContext("2d");
   ctx.fillStyle="#ffffff"; ctx.fillRect(0,0,W,H);
-  var COL={ink:"#2b2b2b",sub:"#7a756c",satblue:"#1565c0",satfill:"#d4e9fb",grid:"#000000"};
+  var COL={ink:"#2b2b2b",sub:"#7a756c",satblue:"#1565c0",satfill:"#c3def7",grid:"#000000"};
   var leftW=Math.round(W*0.23); var PAD=Math.round(10*MMPX);
   // 左パネル
   ctx.textBaseline="alphabetic"; ctx.textAlign="left";
@@ -262,16 +245,17 @@ async function buildPosterCanvas(){
   ctx.fillText(("0"+(M+1)).slice(-2), PAD, PAD+200);
   ctx.fillStyle=COL.sub; ctx.font="600 48px -apple-system,'Hiragino Sans',sans-serif";
   ctx.fillText(MONTH_EN[M]+" "+Y, PAD, PAD+200+72);
-  try{ var logo=await loadImg("assets/logo.png"); var lw=Math.round(leftW*0.78); var lh=Math.round(lw*(logo.naturalHeight/logo.naturalWidth)); ctx.drawImage(logo,PAD,PAD+200+72+70,lw,lh); }catch(e){}
-  ctx.font="600 34px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#333333";
+  var logoBottom=PAD+200+72+70;
+  try{ var logo=await loadImg("assets/logo.png"); var lw=Math.round(leftW*0.78); var lh=Math.round(lw*(logo.naturalHeight/logo.naturalWidth)); var ly=PAD+200+72+70; ctx.drawImage(logo,PAD,ly,lw,lh); logoBottom=ly+lh; }catch(e){}
+  ctx.font="600 37px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#333333";
   var noteLines=wrapCanvasText(ctx,"不定期に休業することがあります。営業日の変更がありましたら googleMAP・instagram などでお伝えします。",leftW-PAD*2);
-  var nlh=60; var noteY=H-PAD-(noteLines.length-1)*nlh-30; noteLines.forEach(function(l,i){ ctx.fillText(l,PAD,noteY+i*nlh); });
-  ctx.fillStyle=COL.grid; ctx.fillRect(leftW-4,0,6,H);
+  var nlh=62; var noteY=logoBottom+110; noteLines.forEach(function(l,i){ ctx.fillText(l,PAD,noteY+i*nlh); }); /* ロゴの下に配置(下端に落とさない) */
+  ctx.fillStyle=COL.grid; ctx.fillRect(leftW-6,0,8,H);
   // 右パネル 曜日ヘッダー
   var rightX=leftW, rightW=W-leftW; var colW=rightW/7; var headH=Math.round(H*0.048);
   ctx.textAlign="center"; ctx.font="800 46px -apple-system,'Hiragino Sans',sans-serif";
   HEAD.forEach(function(w,i){ var cx=rightX+i*colW; if(i===5){ ctx.fillStyle=COL.satfill; ctx.fillRect(cx,0,colW,headH); } ctx.fillStyle=(i===5)?COL.satblue:"#333333"; ctx.fillText(w,cx+colW/2,headH*0.66); });
-  ctx.fillStyle=COL.grid; ctx.fillRect(rightX,0,rightW,4); ctx.fillRect(rightX,headH-3,rightW,5);
+  ctx.fillStyle=COL.grid; ctx.fillRect(rightX,0,rightW,6); ctx.fillRect(rightX,headH-4,rightW,6);
   // グリッド
   var first=new Date(Y,M,1); var startDow=(first.getDay()+6)%7; var dim=new Date(Y,M+1,0).getDate();
   var weeks=Math.ceil((startDow+dim)/7); var rowH=(H-headH)/weeks;
@@ -279,7 +263,7 @@ async function buildPosterCanvas(){
     var row=Math.floor(idx/7), col=idx%7; var x=rightX+col*colW, y=headH+row*rowH;
     var day=idx-startDow+1; var valid=(day>=1&&day<=dim);
     if(col===5){ ctx.fillStyle=COL.satfill; ctx.fillRect(x,y,colW,rowH); }
-    ctx.fillStyle=COL.grid; ctx.fillRect(x,y,colW,3); if(col>0) ctx.fillRect(x,y,3,rowH);
+    ctx.fillStyle=COL.grid; ctx.fillRect(x,y,colW,5); if(col>0) ctx.fillRect(x,y,5,rowH);
     if(!valid) continue;
     var st=statusOf(day); var ov=data.days[day]||{};
     ctx.textAlign="left"; ctx.font="800 42px -apple-system,'Hiragino Sans',sans-serif"; ctx.fillStyle="#333333";
@@ -292,7 +276,7 @@ async function buildPosterCanvas(){
     else if(st==="closed") drawCellBody(ctx,cx,cy,["休業"],true);
     else drawCellBody(ctx,cx,cy,["定休日"],true);
   }
-  ctx.fillStyle=COL.grid; ctx.fillRect(W-6,0,6,H); ctx.fillRect(rightX,H-6,rightW,6);
+  ctx.fillStyle=COL.grid; ctx.fillRect(W-8,0,8,H); ctx.fillRect(rightX,H-8,rightW,8);
   return canvas;
 }
 function exportPoster(){
@@ -309,6 +293,14 @@ function exportPoster(){
       toast("画像を保存しました。写真アプリからプリントできます");
     },"image/png",1);
   }).catch(function(){ toast("画像の作成に失敗しました"); });
+}
+function printPoster(){
+  toast("印刷を準備中…");
+  buildPosterCanvas().then(function(canvas){
+    var b=el("printbox"); b.innerHTML=""; var img=new Image();
+    img.onload=function(){ setTimeout(function(){ window.print(); },90); };
+    img.src=canvas.toDataURL("image/png"); b.appendChild(img);
+  }).catch(function(){ toast("印刷の準備に失敗しました"); });
 }
 // デバッグ: ?canvastest でキャンバスを画面に貼って確認
 if(location.search.indexOf("canvastest")>=0){ buildPosterCanvas().then(function(c){ c.style.width="100%"; c.style.display="block"; document.querySelectorAll(".toolbar,.hint,.wrap").forEach(function(n){n.style.display="none";}); document.body.insertBefore(c, document.body.firstChild); }); }
