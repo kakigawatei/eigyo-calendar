@@ -12,7 +12,7 @@
 <style>
   :root{
     --bg:#f4f1ea; --ink:#2b2b2b; --sub:#7a756c; --line:#dcd6c8;
-    --brand:#2f6f5e; --orange:#c1121f; --blue-bg:#cfe2f7; --gridline:#8f887a; --paper:#fffdf8;
+    --brand:#2f6f5e; --orange:#c1121f; --satblue:#1565c0; --gridline:#8f887a; --paper:#ffffff;
     --sat:env(safe-area-inset-top,0px);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -36,11 +36,12 @@
   .right{flex:1;display:flex;flex-direction:column;}
   .whead{display:grid;grid-template-columns:repeat(7,1fr);}
   .whead div{text-align:center;font-weight:700;font-size:12px;color:var(--sub);padding:7px 0;}
+  .whead div:nth-child(6){color:var(--satblue);font-weight:800;}
   .grid{flex:1;display:grid;grid-template-columns:repeat(7,1fr);}
   .cell{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:4px 2px;position:relative;cursor:pointer;min-height:66px;display:flex;flex-direction:column;transition:background .15s;}
   .cell:nth-child(7n){border-right:0;}
-  .cell.sat{background:var(--blue-bg);}
-  .cell.blank{background:#faf8f2;cursor:default;}
+  .cell.sat{background:#fff;}
+  .cell.blank{background:#fff;cursor:default;}
   .cell .dnum{font-size:11px;font-weight:700;color:#555;}
   .cell .dnum .hol{color:var(--orange);font-weight:700;font-size:.78em;display:block;}
   .cell .body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:1px;}
@@ -100,6 +101,7 @@
     .whead{border-top:2px solid var(--gridline) !important;}
     .whead div{font-size:15px !important;font-weight:800 !important;color:#333 !important;padding:7px 0 !important;border-bottom:2px solid var(--gridline) !important;border-left:1.6px solid var(--gridline) !important;}
     .whead div:first-child{border-left:0 !important;}
+    .whead div:nth-child(6){color:var(--satblue) !important;}
     .grid{border-right:2px solid var(--gridline) !important;border-bottom:2px solid var(--gridline) !important;}
     .grid .cell{min-height:0 !important;padding:5px 4px !important;border-top:1.6px solid var(--gridline) !important;border-left:1.6px solid var(--gridline) !important;}
     .cell:nth-child(7n){border-right:0 !important;}
