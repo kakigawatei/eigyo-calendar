@@ -12,7 +12,7 @@
 <style>
   :root{
     --bg:#f4f1ea; --ink:#2b2b2b; --sub:#7a756c; --line:#dcd6c8;
-    --brand:#2f6f5e; --orange:#c1121f; --satblue:#1565c0; --gridline:#8f887a; --paper:#ffffff;
+    --brand:#2f6f5e; --orange:#c1121f; --satblue:#1565c0; --gridline:#000000; --paper:#ffffff;
     --sat:env(safe-area-inset-top,0px);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -97,12 +97,12 @@
     .mblock{flex-direction:column !important;align-items:flex-start !important;gap:4px !important;}
     .mnum{font-size:58px !important;} .men{font-size:13px !important;}
     .logoimg{width:80% !important;height:auto !important;margin-top:14px !important;}
-    .note{flex-basis:auto !important;margin-top:auto !important;font-size:10px !important;line-height:1.6 !important;}
+    .note{flex-basis:auto !important;margin-top:9mm !important;font-size:15px !important;line-height:1.95 !important;color:#333 !important;font-weight:600 !important;}
     .whead{border-top:2px solid var(--gridline) !important;}
     .whead div{font-size:15px !important;font-weight:800 !important;color:#333 !important;padding:7px 0 !important;border-bottom:2px solid var(--gridline) !important;border-left:1.6px solid var(--gridline) !important;}
     .whead div:first-child{border-left:0 !important;}
     .whead div:nth-child(6){color:var(--satblue) !important;}
-    .grid{border-right:2px solid var(--gridline) !important;border-bottom:2px solid var(--gridline) !important;}
+    .grid{border-right:2px solid var(--gridline) !important;border-bottom:2px solid var(--gridline) !important;grid-auto-rows:1fr !important;height:100% !important;}
     .grid .cell{min-height:0 !important;padding:5px 4px !important;border-top:1.6px solid var(--gridline) !important;border-left:1.6px solid var(--gridline) !important;}
     .cell:nth-child(7n){border-right:0 !important;}
     .cell .dnum{font-size:15px !important;font-weight:800 !important;color:#333 !important;} .cell .dnum .hol{display:inline !important;margin-left:4px;font-size:.72em;}
@@ -191,6 +191,8 @@ function render(){
     else body='<div class="closed">定休日</div>';
     cells+='<div class="cell'+(isSat?' sat':'')+'" onclick="pick('+day+')"><div class="dnum">'+day+'</div><div class="body">'+body+'</div></div>';
   }
+  var trail=(7-((startDow+dim)%7))%7; // 月末の後を空マスで埋めて最終週も四角に
+  for(var t=0;t<trail;t++) cells+='<div class="cell blank"></div>';
   var poster='<div class="left"><div class="mblock"><div class="mnum">'+("0"+(M+1)).slice(-2)+'</div><div class="men">'+MONTH_EN[M]+' '+Y+'</div></div>'
     +'<img class="logoimg" src="assets/logo.png" alt="アブララボ">'
     +'<div class="note">不定期に休業することがあります。営業日の変更がありましたら googleMAP・instagram などでお伝えします。</div></div>'
