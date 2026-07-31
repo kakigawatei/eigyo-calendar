@@ -103,7 +103,9 @@
     .whead div{font-size:15px !important;font-weight:800 !important;color:#333 !important;padding:7px 0 !important;border-bottom:2px solid var(--gridline) !important;border-left:1.6px solid var(--gridline) !important;}
     .whead div:first-child{border-left:0 !important;}
     .whead div:nth-child(6){color:var(--satblue) !important;}
-    .grid{border-right:2px solid var(--gridline) !important;border-bottom:2px solid var(--gridline) !important;grid-auto-rows:1fr !important;height:100% !important;}
+    .grid{border-right:2px solid var(--gridline) !important;border-bottom:2px solid var(--gridline) !important;grid-auto-rows:1fr !important;min-height:0 !important;box-sizing:border-box !important;overflow:hidden !important;}
+    .right{overflow:hidden !important;box-sizing:border-box !important;}
+    .poster,.left,.cell,.whead,.whead div{box-sizing:border-box !important;}
     .grid .cell{min-height:0 !important;padding:5px 4px !important;border-top:1.6px solid var(--gridline) !important;border-left:1.6px solid var(--gridline) !important;}
     .cell:nth-child(7n){border-right:0 !important;}
     .cell .dnum{font-size:15px !important;font-weight:800 !important;color:#333 !important;} .cell .dnum .hol{display:inline !important;margin-left:4px;font-size:.72em;}
