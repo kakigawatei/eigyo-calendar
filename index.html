@@ -278,6 +278,8 @@ async function buildPosterCanvas(){
     else drawCellBody(ctx,cx,cy,["定休日"],true);
   }
   ctx.fillStyle=COL.grid; ctx.fillRect(W-8,0,8,H); ctx.fillRect(rightX,H-8,rightW,8);
+  // 全体を囲む外枠（masa好み＝余白＋しっかりした枠）
+  ctx.strokeStyle=COL.grid; ctx.lineWidth=8; ctx.strokeRect(4,4,W-8,H-8);
   return canvas;
 }
 /* Instagramフィード用（縦長4:5＝1080×1350）ヘッダー上・グリッド下の縦構成 */
@@ -328,6 +330,7 @@ async function buildIGCanvas(){
   // 注意書き
   ctx.textAlign="left"; ctx.font="500 24px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#555555";
   ctx.fillText("不定期に休業することがあります。営業日の変更は googleMAP・instagram でお伝えします。", MG, H-46);
+  ctx.strokeStyle=COL.grid; ctx.lineWidth=6; ctx.strokeRect(4,4,W-8,H-8); // 外枠
   return canvas;
 }
 function exportIG(){
