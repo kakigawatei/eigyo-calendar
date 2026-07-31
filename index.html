@@ -12,7 +12,7 @@
 <style>
   :root{
     --bg:#f4f1ea; --ink:#2b2b2b; --sub:#7a756c; --line:#dcd6c8;
-    --brand:#2f6f5e; --orange:#c1121f; --satblue:#1565c0; --gridline:#000000; --paper:#ffffff;
+    --brand:#2f6f5e; --orange:#c1121f; --satblue:#1565c0; --satfill:#d4e9fb; --gridline:#000000; --paper:#ffffff;
     --sat:env(safe-area-inset-top,0px);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -36,12 +36,12 @@
   .right{flex:1;display:flex;flex-direction:column;}
   .whead{display:grid;grid-template-columns:repeat(7,1fr);}
   .whead div{text-align:center;font-weight:700;font-size:12px;color:var(--sub);padding:7px 0;}
-  .whead div:nth-child(6){color:var(--satblue);font-weight:800;}
+  .whead div:nth-child(6){color:var(--satblue);font-weight:800;background:var(--satfill);}
   .grid{flex:1;display:grid;grid-template-columns:repeat(7,1fr);}
   .cell{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:4px 2px;position:relative;cursor:pointer;min-height:66px;display:flex;flex-direction:column;transition:background .15s;}
   .cell:nth-child(7n){border-right:0;}
-  .cell.sat{background:#fff;}
-  .cell.blank{background:#fff;cursor:default;}
+  .cell.sat{background:var(--satfill);}
+  .cell.blank{cursor:default;}
   .cell .dnum{font-size:11px;font-weight:700;color:#555;}
   .cell .dnum .hol{color:var(--orange);font-weight:700;font-size:.78em;display:block;}
   .cell .body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:1px;}
@@ -98,7 +98,8 @@
     .mnum{font-size:58px !important;} .men{font-size:13px !important;}
     .logoimg{width:80% !important;height:auto !important;margin-top:14px !important;}
     .note{flex-basis:auto !important;margin-top:9mm !important;font-size:15px !important;line-height:1.95 !important;color:#333 !important;font-weight:600 !important;}
-    .whead{border-top:2px solid var(--gridline) !important;}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+    .whead{border-top:2px solid var(--gridline) !important;border-right:2px solid var(--gridline) !important;}
     .whead div{font-size:15px !important;font-weight:800 !important;color:#333 !important;padding:7px 0 !important;border-bottom:2px solid var(--gridline) !important;border-left:1.6px solid var(--gridline) !important;}
     .whead div:first-child{border-left:0 !important;}
     .whead div:nth-child(6){color:var(--satblue) !important;}
@@ -176,7 +177,7 @@ function render(){
   var first=new Date(Y,M,1); var startDow=(first.getDay()+6)%7; // 月曜始まりの先頭空白数
   var dim=new Date(Y,M+1,0).getDate();
   var cells="";
-  for(var i=0;i<startDow;i++) cells+='<div class="cell blank"></div>';
+  for(var i=0;i<startDow;i++) cells+='<div class="cell blank'+(i===5?' sat':'')+'"></div>';
   for(var day=1;day<=dim;day++){
     var dow=new Date(Y,M,day).getDay();
     var isSat=(dow===6);
@@ -192,7 +193,7 @@ function render(){
     cells+='<div class="cell'+(isSat?' sat':'')+'" onclick="pick('+day+')"><div class="dnum">'+day+'</div><div class="body">'+body+'</div></div>';
   }
   var trail=(7-((startDow+dim)%7))%7; // 月末の後を空マスで埋めて最終週も四角に
-  for(var t=0;t<trail;t++) cells+='<div class="cell blank"></div>';
+  for(var t=0;t<trail;t++){ var col=(startDow+dim+t)%7; cells+='<div class="cell blank'+(col===5?' sat':'')+'"></div>'; }
   var poster='<div class="left"><div class="mblock"><div class="mnum">'+("0"+(M+1)).slice(-2)+'</div><div class="men">'+MONTH_EN[M]+' '+Y+'</div></div>'
     +'<img class="logoimg" src="assets/logo.png" alt="アブララボ">'
     +'<div class="note">不定期に休業することがあります。営業日の変更がありましたら googleMAP・instagram などでお伝えします。</div></div>'
