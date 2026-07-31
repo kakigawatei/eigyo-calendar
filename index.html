@@ -97,6 +97,7 @@
     <div class="mnav"><button class="arw" onclick="chMonth(-1)">‹</button><span id="mlabel"></span><button class="arw" onclick="chMonth(1)">›</button></div>
     <button class="act" onclick="exportPoster()">📤 スマホで印刷/保存（横）</button>
     <button onclick="printPoster()">🖨 PCで印刷</button>
+    <button onclick="exportIG()">📸 Instagram用</button>
     <span id="calsync" style="font-size:11px;opacity:.85">…</span>
   </div>
   <div class="hint">各日をタップ → 営業／夕方休業／休業／定休日 を選べます。基本は月・水・金・土が営業。変更したい日だけ直して「印刷」。</div>
@@ -279,6 +280,68 @@ async function buildPosterCanvas(){
   ctx.fillStyle=COL.grid; ctx.fillRect(W-8,0,8,H); ctx.fillRect(rightX,H-8,rightW,8);
   return canvas;
 }
+/* Instagramフィード用（縦長4:5＝1080×1350）ヘッダー上・グリッド下の縦構成 */
+async function buildIGCanvas(){
+  var W=1080,H=1350;
+  var canvas=document.createElement("canvas"); canvas.width=W; canvas.height=H;
+  var ctx=canvas.getContext("2d");
+  ctx.fillStyle="#ffffff"; ctx.fillRect(0,0,W,H);
+  var COL={ink:"#2b2b2b",sub:"#7a756c",satblue:"#1565c0",satfill:"#c3def7",grid:"#000000"};
+  var MG=48;
+  // ヘッダー：左に月、右にロゴ
+  ctx.textBaseline="alphabetic"; ctx.textAlign="left";
+  ctx.fillStyle=COL.ink; ctx.font="800 104px -apple-system,'Hiragino Sans',sans-serif"; ctx.fillText(("0"+(M+1)).slice(-2), MG, 128);
+  ctx.fillStyle=COL.sub; ctx.font="600 32px -apple-system,'Hiragino Sans',sans-serif"; ctx.fillText(MONTH_EN[M]+" "+Y, MG+4, 170);
+  try{ var logo=await loadImg("assets/logo.png"); var lw=258; var lh=Math.round(lw*(logo.naturalHeight/logo.naturalWidth)); ctx.drawImage(logo, W-MG-lw, 44, lw, lh); }catch(e){}
+  var gridTop=246;
+  // 曜日ヘッダー
+  var gx=MG, gw=W-MG*2; var colW=gw/7; var headH=56;
+  ctx.textAlign="center"; ctx.font="800 32px -apple-system,'Hiragino Sans',sans-serif";
+  HEAD.forEach(function(w,i){ var cx=gx+i*colW; if(i===5){ ctx.fillStyle=COL.satfill; ctx.fillRect(cx,gridTop,colW,headH); } ctx.fillStyle=(i===5)?COL.satblue:"#333333"; ctx.fillText(w,cx+colW/2,gridTop+headH*0.68); });
+  ctx.fillStyle=COL.grid; ctx.fillRect(gx,gridTop,gw,4); ctx.fillRect(gx,gridTop+headH-3,gw,4);
+  // グリッド
+  var first=new Date(Y,M,1); var startDow=(first.getDay()+6)%7; var dim=new Date(Y,M+1,0).getDate();
+  var weeks=Math.ceil((startDow+dim)/7);
+  var noteH=118; var gridBottom=H-noteH; var rowH=(gridBottom-(gridTop+headH))/weeks;
+  function igBody(cx,cy,lines,bold,redIdx){
+    if(bold){ ctx.font="900 34px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#c1121f"; ctx.fillText(lines[0],cx,cy+10); return; }
+    var lh=30; var sy=cy-((lines.length-1)*lh)/2+8;
+    lines.forEach(function(t,i){ var r=(i===redIdx); ctx.font=(r?"800 ":"600 ")+"22px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle=r?"#c1121f":"#1a1a1a"; ctx.fillText(t,cx,sy+i*lh); });
+  }
+  for(var idx=0;idx<weeks*7;idx++){
+    var row=Math.floor(idx/7), col=idx%7; var x=gx+col*colW, y=gridTop+headH+row*rowH;
+    var day=idx-startDow+1; var valid=(day>=1&&day<=dim);
+    if(col===5){ ctx.fillStyle=COL.satfill; ctx.fillRect(x,y,colW,rowH); }
+    ctx.fillStyle=COL.grid; ctx.fillRect(x,y,colW,3); if(col>0) ctx.fillRect(x,y,3,rowH);
+    if(!valid) continue;
+    var st=statusOf(day); var ov=data.days[day]||{};
+    ctx.textAlign="left"; ctx.font="800 26px -apple-system,'Hiragino Sans',sans-serif"; ctx.fillStyle="#333333"; ctx.fillText(String(day),x+12,y+34);
+    ctx.textAlign="center"; var cx=x+colW/2, cy=y+rowH/2+16;
+    if(st==="custom"){ var ls=[]; if(ov.lunch)ls.push(ov.lunch); if(ov.dinner)ls.push(ov.dinner); if(ls.length)igBody(cx,cy,ls,false); else igBody(cx,cy,["休業"],true); }
+    else if(st==="open") igBody(cx,cy,[LUNCH,DINNER],false);
+    else if(st==="eve") igBody(cx,cy,[LUNCH,"夕方休業"],false,1);
+    else if(st==="noon") igBody(cx,cy,["昼休業",DINNER],false,0);
+    else if(st==="closed") igBody(cx,cy,["休業"],true);
+    else igBody(cx,cy,["定休日"],true);
+  }
+  ctx.fillStyle=COL.grid; ctx.fillRect(gx+gw-4,gridTop,4,gridBottom-gridTop); ctx.fillRect(gx,gridBottom-4,gw,4);
+  // 注意書き
+  ctx.textAlign="left"; ctx.font="500 24px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#555555";
+  ctx.fillText("不定期に休業することがあります。営業日の変更は googleMAP・instagram でお伝えします。", MG, H-46);
+  return canvas;
+}
+function exportIG(){
+  toast("Instagram用画像を作成中…");
+  buildIGCanvas().then(function(canvas){
+    canvas.toBlob(function(blob){
+      var fname="営業カレンダー_IG_"+Y+"-"+("0"+(M+1)).slice(-2)+".png";
+      var file=new File([blob],fname,{type:"image/png"});
+      if(navigator.canShare && navigator.canShare({files:[file]})){ navigator.share({files:[file],title:"営業カレンダー"}).catch(function(){}); return; }
+      var url=URL.createObjectURL(blob); var a=document.createElement("a"); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove();
+      toast("Instagram用画像を保存しました");
+    },"image/png",1);
+  }).catch(function(){ toast("画像の作成に失敗しました"); });
+}
 function exportPoster(){
   toast("画像を作成中…");
   buildPosterCanvas().then(function(canvas){
@@ -304,6 +367,7 @@ function printPoster(){
 }
 // デバッグ: ?canvastest でキャンバスを画面に貼って確認
 if(location.search.indexOf("canvastest")>=0){ buildPosterCanvas().then(function(c){ c.style.width="100%"; c.style.display="block"; document.querySelectorAll(".toolbar,.hint,.wrap").forEach(function(n){n.style.display="none";}); document.body.insertBefore(c, document.body.firstChild); }); }
+if(location.search.indexOf("igtest")>=0){ buildIGCanvas().then(function(c){ c.style.width="420px"; c.style.display="block"; c.style.border="1px solid #ccc"; document.querySelectorAll(".toolbar,.hint,.wrap").forEach(function(n){n.style.display="none";}); document.body.insertBefore(c, document.body.firstChild); }); }
 
 render();
 cloudPull(Y,M);
