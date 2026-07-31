@@ -102,6 +102,7 @@
     <div class="mnav"><button class="arw" onclick="chMonth(-1)">‹</button><span id="mlabel"></span><button class="arw" onclick="chMonth(1)">›</button></div>
     <button onclick="resetMonth()">デフォルトに戻す</button>
     <button class="act" onclick="window.print()">🖨 印刷</button>
+    <span id="calsync" style="font-size:11px;opacity:.85">…</span>
   </div>
   <div class="hint">各日をタップ → 営業／夕方休業／休業／定休日 を選べます。基本は月・水・金・土が営業。変更したい日だけ直して「印刷」。</div>
   <div class="wrap"><div class="poster" id="poster"></div></div>
@@ -123,8 +124,29 @@ var now=new Date();
 var Y=now.getFullYear(), M=now.getMonth(); // 表示中の年・月(0始)
 function keyOf(y,m){ return "eigyocal_"+y+"-"+(m+1); }
 function load(y,m){ try{var v=localStorage.getItem(keyOf(y,m));return v?JSON.parse(v):{days:{}};}catch(e){return {days:{}};} }
-function save(y,m,d){ try{localStorage.setItem(keyOf(y,m),JSON.stringify(d));}catch(e){} }
+function save(y,m,d){ try{localStorage.setItem(keyOf(y,m),JSON.stringify(d));}catch(e){} cloudPush(y,m); }
 var data=load(Y,M);
+
+/* ---------- クラウド同期（Firebase kakigawatei-franchise・shime_docsルール流用でmasa追加設定不要） ---------- */
+var FB={apiKey:"AIzaSyDtDZIEQtBzjujnpTDcXt1QeEU2r-wbg74",projectId:"kakigawatei-franchise"};
+var fbTok=null,fbExp=0,pushT={};
+function fbAnon(){return fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="+FB.apiKey,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({returnSecureToken:true})}).then(function(x){if(!x.ok)throw 0;return x.json();}).then(function(d){fbTok=d.idToken;fbExp=Date.now()+(parseInt(d.expiresIn,10)-60)*1000;try{localStorage.setItem("eigyocal_fb_refresh",d.refreshToken);}catch(e){}return fbTok;});}
+function fbAuth(){if(fbTok&&Date.now()<fbExp)return Promise.resolve(fbTok);var r=null;try{r=localStorage.getItem("eigyocal_fb_refresh");}catch(e){}
+  if(r)return fetch("https://securetoken.googleapis.com/v1/token?key="+FB.apiKey,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"grant_type=refresh_token&refresh_token="+encodeURIComponent(r)}).then(function(x){if(!x.ok)throw 0;return x.json();}).then(function(d){fbTok=d.id_token;fbExp=Date.now()+(parseInt(d.expires_in,10)-60)*1000;return fbTok;}).catch(fbAnon);
+  return fbAnon();}
+function docId(y,m){return "cal_"+y+"-"+(m+1);}
+function fsUrl(id){return "https://firestore.googleapis.com/v1/projects/"+FB.projectId+"/databases/(default)/documents/shime_docs/"+id;}
+function cloudPush(y,m){ var id=docId(y,m); setCalSync("同期中…"); clearTimeout(pushT[id]); pushT[id]=setTimeout(function(){ var v=localStorage.getItem(keyOf(y,m))||JSON.stringify({days:{}});
+  fbAuth().then(function(t){return fetch(fsUrl(id)+"?updateMask.fieldPaths=json&updateMask.fieldPaths=ts",{method:"PATCH",headers:{Authorization:"Bearer "+t,"Content-Type":"application/json"},body:JSON.stringify({fields:{json:{stringValue:v},ts:{integerValue:String(Date.now())}}})});}).then(function(r){if(!r.ok)throw 0;setCalSync("同期済");}).catch(function(){setCalSync("後で同期");}); },700); }
+function cloudPull(y,m){ var id=docId(y,m); setCalSync("同期中…");
+  return fbAuth().then(function(t){return fetch(fsUrl(id),{headers:{Authorization:"Bearer "+t}});}).then(function(r){if(r.status===404)return null;if(!r.ok)throw 0;return r.json();}).then(function(d){
+    var js=(d&&d.fields&&d.fields.json)?d.fields.json.stringValue:null;
+    if(js===null){ var local=localStorage.getItem(keyOf(y,m)); if(local){ cloudPush(y,m); } else { setCalSync("同期済"); } return; }
+    var cur=localStorage.getItem(keyOf(y,m));
+    if(cur!==js){ try{localStorage.setItem(keyOf(y,m),js);}catch(e){} if(y===Y&&m===M){ data=load(Y,M); render(); } }
+    setCalSync("同期済");
+  }).catch(function(){ setCalSync("オフライン"); }); }
+function setCalSync(t){ var e=el("calsync"); if(e)e.textContent=t; }
 
 function el(id){return document.getElementById(id);}
 function toast(m){var t=el("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("on");},1400);}
@@ -186,13 +208,15 @@ function editHours(day){
 function saveHours(day){ var l=el("h_lunch").value.trim(), d=el("h_dinner").value.trim(); if(!l&&!d){ data.days[day]={status:"closed"}; } else { data.days[day]={status:"custom",lunch:l,dinner:d}; } save(Y,M,data); closeModal(); render(); }
 function setDay(day,v){ data.days[day]={status:v}; save(Y,M,data); closeModal(); render(); }
 function clearDay(day){ delete data.days[day]; save(Y,M,data); closeModal(); render(); }
-function chMonth(delta){ M+=delta; if(M<0){M=11;Y--;} if(M>11){M=0;Y++;} data=load(Y,M); render(); }
+function chMonth(delta){ M+=delta; if(M<0){M=11;Y--;} if(M>11){M=0;Y++;} data=load(Y,M); render(); cloudPull(Y,M); }
 function resetMonth(){ if(!confirm("この月をデフォルト（月水金土=営業／火木日=定休日）に戻しますか？")) return; data={days:{}}; save(Y,M,data); render(); toast("デフォルトに戻しました"); }
 function openModal(h){el("modalbox").innerHTML=h;el("modal").classList.add("on");}
 function closeModal(){el("modal").classList.remove("on");}
 el("modal").addEventListener("click",function(e){if(e.target===this)closeModal();});
 
 render();
+cloudPull(Y,M);
+document.addEventListener("visibilitychange",function(){ if(!document.hidden&&!el("modal").classList.contains("on")) cloudPull(Y,M); });
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});
 </script>
 </body>
