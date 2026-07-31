@@ -84,9 +84,10 @@
   @media print{
     /* iOSは用紙向き指定を無視するため、内容を90°回して"横A4"で刷る（PC/スマホ共通） */
     @page{size:A4 portrait;margin:0;}
-    html,body{background:#fff!important;margin:0!important;}
-    .toolbar,.hint,.toast{display:none !important;}
-    .wrap{padding:0!important;margin:0!important;}
+    html,body{background:#fff!important;margin:0!important;padding:0!important;width:210mm!important;height:297mm!important;overflow:hidden!important;}
+    #app{height:auto!important;overflow:visible!important;display:block!important;}
+    .toolbar,.hint,.toast,nav{display:none !important;}
+    .wrap{padding:0!important;margin:0!important;height:0!important;overflow:visible!important;}
     .poster{box-shadow:none!important;border:none!important;border-radius:0!important;box-sizing:border-box!important;
       width:297mm!important;height:210mm!important;flex-direction:row !important;aspect-ratio:auto!important;
       position:absolute!important;top:0!important;left:0!important;
