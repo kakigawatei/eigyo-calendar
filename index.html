@@ -25,29 +25,46 @@
   .hint{max-width:1100px;margin:12px auto 0;padding:0 14px;color:var(--sub);font-size:13px;text-align:center;}
   .wrap{padding:14px;display:flex;justify-content:center;}
 
-  /* ---- poster (printable) ---- */
-  .poster{background:var(--paper);width:100%;max-width:1100px;aspect-ratio:1.414/1;display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.06);}
-  .left{width:24%;min-width:150px;padding:3% 2.4%;border-right:1px solid var(--line);display:flex;flex-direction:column;}
-  .mnum{font-size:clamp(40px,7vw,86px);font-weight:800;line-height:.9;letter-spacing:-.02em;}
-  .men{font-size:clamp(11px,1.4vw,16px);color:var(--sub);margin-top:6px;font-weight:600;}
-  .logo{margin-top:7%;font-weight:900;font-size:clamp(15px,2.2vw,26px);letter-spacing:.04em;}
-  .logo small{display:block;font-weight:700;font-size:clamp(8px,.9vw,10px);color:var(--sub);letter-spacing:.08em;margin-top:6px;line-height:1.5;}
-  .note{margin-top:auto;font-size:clamp(9px,1.05vw,12px);color:var(--sub);line-height:1.7;}
+  /* ---- poster ---- モバイルファースト（縦・編集しやすい）／広い画面と印刷は横A4 ---- */
+  .poster{background:var(--paper);width:100%;max-width:1100px;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.06);}
+  .left{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .mblock{display:flex;align-items:baseline;gap:8px;}
+  .mnum{font-size:46px;font-weight:800;line-height:.9;letter-spacing:-.02em;}
+  .men{font-size:13px;color:var(--sub);font-weight:600;}
+  .logoimg{height:52px;width:auto;display:block;}
+  .note{flex-basis:100%;font-size:11px;color:var(--sub);line-height:1.6;}
   .right{flex:1;display:flex;flex-direction:column;}
   .whead{display:grid;grid-template-columns:repeat(7,1fr);}
-  .whead div{text-align:center;font-weight:700;font-size:clamp(10px,1.2vw,14px);color:var(--sub);padding:6px 0;}
-  .grid{flex:1;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;}
-  .cell{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:5px 5px 3px;position:relative;cursor:pointer;min-height:0;display:flex;flex-direction:column;transition:background .15s;}
+  .whead div{text-align:center;font-weight:700;font-size:12px;color:var(--sub);padding:7px 0;}
+  .grid{flex:1;display:grid;grid-template-columns:repeat(7,1fr);}
+  .cell{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:4px 2px;position:relative;cursor:pointer;min-height:66px;display:flex;flex-direction:column;transition:background .15s;}
   .cell:nth-child(7n){border-right:0;}
   .cell.sat{background:var(--blue-bg);}
   .cell.blank{background:#faf8f2;cursor:default;}
-  .cell .dnum{font-size:clamp(10px,1.15vw,14px);font-weight:700;color:#555;}
-  .cell .dnum .hol{color:var(--orange);font-weight:700;margin-left:4px;font-size:.82em;}
-  .cell .body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:2px;}
-  .cell .hours{font-size:clamp(9px,1.02vw,12.5px);color:#333;line-height:1.35;}
-  .cell .closed{font-size:clamp(11px,1.35vw,16px);font-weight:800;color:var(--orange);}
-  .cell .eve{font-size:clamp(9px,1.02vw,12.5px);font-weight:700;color:var(--orange);}
+  .cell .dnum{font-size:11px;font-weight:700;color:#555;}
+  .cell .dnum .hol{color:var(--orange);font-weight:700;font-size:.78em;display:block;}
+  .cell .body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:1px;}
+  .cell .hours{font-size:9.5px;color:#333;line-height:1.25;}
+  .cell .closed{font-size:12px;font-weight:800;color:var(--orange);}
+  .cell .eve{font-size:9.5px;font-weight:700;color:var(--orange);}
+  .hf{display:none;} .hm{display:inline;}
   .cell:active{background:#f0ece0;}
+  @media(min-width:640px){
+    .poster{flex-direction:row;aspect-ratio:1.414/1;}
+    .left{width:24%;min-width:150px;flex-direction:column;align-items:flex-start;border-bottom:0;border-right:1px solid var(--line);padding:3% 2.4%;}
+    .mblock{flex-direction:column;align-items:flex-start;gap:4px;}
+    .mnum{font-size:clamp(40px,6.5vw,84px);} .men{font-size:clamp(11px,1.3vw,16px);}
+    .logoimg{width:88%;height:auto;margin-top:8%;}
+    .note{flex-basis:auto;margin-top:auto;font-size:clamp(9px,1vw,12px);line-height:1.7;}
+    .whead div{font-size:clamp(10px,1.2vw,14px);}
+    .cell{padding:5px 5px 3px;min-height:0;}
+    .cell .dnum{font-size:clamp(10px,1.15vw,14px);}
+    .cell .dnum .hol{display:inline;margin-left:4px;}
+    .cell .hours{font-size:clamp(9px,1.02vw,12.5px);line-height:1.35;}
+    .cell .closed{font-size:clamp(11px,1.35vw,16px);}
+    .cell .eve{font-size:clamp(9px,1.02vw,12.5px);}
+    .hf{display:inline;} .hm{display:none;}
+  }
 
   .modal{position:fixed;inset:0;background:rgba(20,20,18,.42);display:none;align-items:flex-end;justify-content:center;z-index:50;}
   .modal.on{display:flex;}
@@ -65,7 +82,14 @@
     @page{size:A4 landscape;margin:8mm;}
     .toolbar,.hint,.toast{display:none !important;}
     .wrap{padding:0;}
-    .poster{box-shadow:none;border:1px solid #ccc;max-width:none;width:100%;aspect-ratio:auto;height:190mm;border-radius:0;}
+    .poster{box-shadow:none;border:1px solid #ccc;max-width:none;width:100%;flex-direction:row !important;aspect-ratio:auto;height:190mm;border-radius:0;}
+    .left{width:24% !important;flex-direction:column !important;align-items:flex-start !important;border-bottom:0 !important;border-right:1px solid #ccc !important;padding:3% 2.4% !important;}
+    .mblock{flex-direction:column !important;align-items:flex-start !important;gap:4px !important;}
+    .mnum{font-size:72px !important;} .logoimg{width:82% !important;height:auto !important;margin-top:18px !important;}
+    .note{flex-basis:auto !important;margin-top:auto !important;font-size:11px !important;}
+    .cell{min-height:0 !important;padding:5px !important;} .cell .dnum .hol{display:inline !important;margin-left:4px;}
+    .cell .hours{font-size:12px !important;} .cell .closed{font-size:15px !important;} .cell .eve{font-size:12px !important;}
+    .hf{display:inline !important;} .hm{display:none !important;}
     html,body{background:#fff;}
   }
 </style>
@@ -118,14 +142,14 @@ function render(){
     var isSat=(dow===6);
     var st=statusOf(day);
     var body="";
-    if(st==="open") body='<div class="hours">'+LUNCH+'</div><div class="hours">17:00〜20:00</div>';
-    else if(st==="eve") body='<div class="hours">'+LUNCH+'</div><div class="eve">夕方休業</div>';
+    if(st==="open") body='<div class="hours"><span class="hf">11:00〜14:00</span><span class="hm">11-14</span></div><div class="hours"><span class="hf">17:00〜20:00</span><span class="hm">17-20</span></div>';
+    else if(st==="eve") body='<div class="hours"><span class="hf">11:00〜14:00</span><span class="hm">11-14</span></div><div class="eve"><span class="hf">夕方休業</span><span class="hm">夜休</span></div>';
     else if(st==="closed") body='<div class="closed">休業</div>';
     else body='<div class="closed">定休日</div>';
     cells+='<div class="cell'+(isSat?' sat':'')+'" onclick="pick('+day+')"><div class="dnum">'+day+'</div><div class="body">'+body+'</div></div>';
   }
-  var poster='<div class="left"><div class="mnum">'+("0"+(M+1)).slice(-2)+'</div><div class="men">'+MONTH_EN[M]+' '+Y+'</div>'
-    +'<div class="logo">アブララボ<small>EAT IN &amp; TAKE OUT &amp; DELIVERY<br>NOODLE. ANY FOODS<br>FROM KAKIGAWATEI</small></div>'
+  var poster='<div class="left"><div class="mblock"><div class="mnum">'+("0"+(M+1)).slice(-2)+'</div><div class="men">'+MONTH_EN[M]+' '+Y+'</div></div>'
+    +'<img class="logoimg" src="assets/logo.png" alt="アブララボ">'
     +'<div class="note">不定期に休業することがあります。営業日の変更がありましたら googleMAP・instagram などでお伝えします。</div></div>'
     +'<div class="right"><div class="whead">'+HEAD.map(function(w){return '<div>'+w+'</div>';}).join("")+'</div><div class="grid">'+cells+'</div></div>';
   el("poster").innerHTML=poster;
