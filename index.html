@@ -230,9 +230,9 @@ function loadImg(src){ return new Promise(function(res,rej){ var img=new Image()
 function wrapCanvasText(ctx,text,maxWidth){ var lines=[],line=""; for(var i=0;i<text.length;i++){ var test=line+text[i]; if(ctx.measureText(test).width>maxWidth && line){ lines.push(line); line=text[i]; } else line=test; } if(line) lines.push(line); return lines; }
 // lines描画（bold=中央大きく赤太字／redIdx=何行目を赤太字に）
 function drawCellBody(ctx,cx,cy,lines,bold,redIdx){
-  if(bold){ ctx.font="900 52px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#c1121f"; ctx.fillText(lines[0],cx,cy+18); return; }
-  var lh=46; var startY=cy-((lines.length-1)*lh)/2+14;
-  lines.forEach(function(t,i){ var isRed=(i===redIdx); ctx.font=(isRed?"800 ":"600 ")+"38px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle=isRed?"#c1121f":"#1a1a1a"; ctx.fillText(t,cx,startY+i*lh); });
+  if(bold){ ctx.font="800 40px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#c1121f"; ctx.fillText(lines[0],cx,cy+14); return; }
+  var lh=40; var startY=cy-((lines.length-1)*lh)/2+11;
+  lines.forEach(function(t,i){ var isRed=(i===redIdx); ctx.font=(isRed?"700 ":"500 ")+"30px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle=isRed?"#c1121f":"#1a1a1a"; ctx.fillText(t,cx,startY+i*lh); });
 }
 async function buildPosterCanvas(){
   var W=Math.round(297*MMPX), H=Math.round(210*MMPX); // 3508 x 2480
@@ -252,12 +252,12 @@ async function buildPosterCanvas(){
   ctx.font="600 37px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#333333";
   var noteLines=wrapCanvasText(ctx,"不定期に休業することがあります。営業日の変更がありましたら googleMAP・instagram などでお伝えします。",leftW-PAD*2);
   var nlh=62; var noteY=logoBottom+110; noteLines.forEach(function(l,i){ ctx.fillText(l,PAD,noteY+i*nlh); }); /* ロゴの下に配置(下端に落とさない) */
-  ctx.fillStyle=COL.grid; ctx.fillRect(leftW-6,0,8,H);
+  ctx.fillStyle=COL.grid; ctx.fillRect(leftW-3,0,3,H);
   // 右パネル 曜日ヘッダー
   var rightX=leftW, rightW=W-leftW; var colW=rightW/7; var headH=Math.round(H*0.048);
-  ctx.textAlign="center"; ctx.font="800 46px -apple-system,'Hiragino Sans',sans-serif";
+  ctx.textAlign="center"; ctx.font="700 38px -apple-system,'Hiragino Sans',sans-serif";
   HEAD.forEach(function(w,i){ var cx=rightX+i*colW; if(i===5){ ctx.fillStyle=COL.satfill; ctx.fillRect(cx,0,colW,headH); } ctx.fillStyle=(i===5)?COL.satblue:"#333333"; ctx.fillText(w,cx+colW/2,headH*0.66); });
-  ctx.fillStyle=COL.grid; ctx.fillRect(rightX,0,rightW,6); ctx.fillRect(rightX,headH-4,rightW,6);
+  ctx.fillStyle=COL.grid; ctx.fillRect(rightX,0,rightW,3); ctx.fillRect(rightX,headH-3,rightW,3);
   // グリッド
   var first=new Date(Y,M,1); var startDow=(first.getDay()+6)%7; var dim=new Date(Y,M+1,0).getDate();
   var weeks=Math.ceil((startDow+dim)/7); var rowH=(H-headH)/weeks;
@@ -265,11 +265,11 @@ async function buildPosterCanvas(){
     var row=Math.floor(idx/7), col=idx%7; var x=rightX+col*colW, y=headH+row*rowH;
     var day=idx-startDow+1; var valid=(day>=1&&day<=dim);
     if(col===5){ ctx.fillStyle=COL.satfill; ctx.fillRect(x,y,colW,rowH); }
-    ctx.fillStyle=COL.grid; ctx.fillRect(x,y,colW,5); if(col>0) ctx.fillRect(x,y,5,rowH);
+    ctx.fillStyle=COL.grid; ctx.fillRect(x,y,colW,3); if(col>0) ctx.fillRect(x,y,3,rowH);
     if(!valid) continue;
     var st=statusOf(day); var ov=data.days[day]||{};
-    ctx.textAlign="left"; ctx.font="800 42px -apple-system,'Hiragino Sans',sans-serif"; ctx.fillStyle="#333333";
-    ctx.fillText(String(day),x+20,y+54);
+    ctx.textAlign="left"; ctx.font="700 34px -apple-system,'Hiragino Sans',sans-serif"; ctx.fillStyle="#333333";
+    ctx.fillText(String(day),x+18,y+46);
     ctx.textAlign="center"; var cx=x+colW/2, cy=y+rowH/2+8;
     if(st==="custom"){ var ls=[]; if(ov.lunch)ls.push(ov.lunch); if(ov.dinner)ls.push(ov.dinner); if(ls.length)drawCellBody(ctx,cx,cy,ls,false); else drawCellBody(ctx,cx,cy,["休業"],true); }
     else if(st==="open") drawCellBody(ctx,cx,cy,[LUNCH,DINNER],false);
@@ -278,9 +278,9 @@ async function buildPosterCanvas(){
     else if(st==="closed") drawCellBody(ctx,cx,cy,["休業"],true);
     else drawCellBody(ctx,cx,cy,["定休日"],true);
   }
-  ctx.fillStyle=COL.grid; ctx.fillRect(W-8,0,8,H); ctx.fillRect(rightX,H-8,rightW,8);
-  // 全体を囲む外枠（masa好み＝余白＋しっかりした枠）
-  ctx.strokeStyle=COL.grid; ctx.lineWidth=8; ctx.strokeRect(4,4,W-8,H-8);
+  ctx.fillStyle=COL.grid; ctx.fillRect(W-3,0,3,H); ctx.fillRect(rightX,H-3,rightW,3);
+  // 全体を囲む外枠（細めで上品に）
+  ctx.strokeStyle=COL.grid; ctx.lineWidth=3; ctx.strokeRect(3,3,W-6,H-6);
   return canvas;
 }
 /* Instagramフィード用（縦長4:5＝1080×1350）ヘッダー上・グリッド下の縦構成 */
