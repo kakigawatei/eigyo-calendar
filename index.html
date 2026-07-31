@@ -72,6 +72,7 @@
   @keyframes pop{from{opacity:0;transform:scale(.96)} to{opacity:1;transform:none}}
   @media(max-width:600px){ .modal{align-items:flex-end;padding:0;} .modal .box{border-radius:20px 20px 0 0;max-width:600px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0));} }
   .modal h3{margin:0 0 14px;font-size:17px;}
+  .hin{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px;margin-top:4px;font-family:inherit;box-sizing:border-box;}
   .opt{display:flex;align-items:center;gap:10px;width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:14px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:8px;}
   .opt .sw{width:16px;height:16px;border-radius:50%;background:var(--line);}
   .opt.營業 .sw,.opt.op-open .sw{background:var(--brand);}
@@ -112,8 +113,9 @@
 var WD=["日","月","火","水","木","金","土"];
 var HEAD=["月","火","水","木","金","土","日"]; // 月曜始まり
 var MONTH_EN=["January","February","March","April","May","June","July","August","September","October","November","December"];
-var HOURS_DEFAULT=[["11:00〜14:00"],["17:00〜20:00"]]; // 2部
-var LUNCH="11:00〜14:00";
+var LUNCH="11:00〜14:00", DINNER="17:00〜20:00";
+function abbr(h){ return (h||"").replace(/:00/g,"").replace("〜","-"); }
+function hoursFM(full){ return '<div class="hours"><span class="hf">'+full+'</span><span class="hm">'+abbr(full)+'</span></div>'; }
 // デフォルト曜日パターン：月(1)水(3)金(5)土(6)=営業／火(2)木(4)日(0)=定休日
 function defaultStatus(dow){ return (dow===1||dow===3||dow===5||dow===6) ? "open" : "holiday"; }
 
@@ -142,10 +144,13 @@ function render(){
   for(var day=1;day<=dim;day++){
     var dow=new Date(Y,M,day).getDay();
     var isSat=(dow===6);
+    var ov=data.days[day]||{};
     var st=statusOf(day);
     var body="";
-    if(st==="open") body='<div class="hours"><span class="hf">11:00〜14:00</span><span class="hm">11-14</span></div><div class="hours"><span class="hf">17:00〜20:00</span><span class="hm">17-20</span></div>';
-    else if(st==="eve") body='<div class="hours"><span class="hf">11:00〜14:00</span><span class="hm">11-14</span></div><div class="eve"><span class="hf">夕方休業</span><span class="hm">夜休</span></div>';
+    if(st==="custom"){ var L=""; if(ov.lunch)L+=hoursFM(ov.lunch); if(ov.dinner)L+=hoursFM(ov.dinner); body=L||'<div class="closed">休業</div>'; }
+    else if(st==="open") body=hoursFM(LUNCH)+hoursFM(DINNER);
+    else if(st==="eve") body=hoursFM(LUNCH)+'<div class="eve"><span class="hf">夕方休業</span><span class="hm">夜休</span></div>';
+    else if(st==="noon") body='<div class="eve"><span class="hf">昼休業</span><span class="hm">昼休</span></div>'+hoursFM(DINNER);
     else if(st==="closed") body='<div class="closed">休業</div>';
     else body='<div class="closed">定休日</div>';
     cells+='<div class="cell'+(isSat?' sat':'')+'" onclick="pick('+day+')"><div class="dnum">'+day+'</div><div class="body">'+body+'</div></div>';
@@ -162,10 +167,23 @@ function pick(day){
   openModal('<h3>'+(M+1)+'/'+day+'（'+WD[new Date(Y,M,day).getDay()]+'）</h3>'
     +opt("open","営業（11:00〜14:00・17:00〜20:00）","op-open")
     +opt("eve","夕方休業（昼のみ営業）","op-eve")
+    +opt("noon","昼休業（夜のみ営業）","op-eve")
     +opt("closed","休業","op-closed")
     +opt("holiday","定休日","op-holiday")
+    +'<button class="opt" onclick="editHours('+day+')"><span class="sw" style="background:var(--brand)"></span>時間を変更（カスタム）</button>'
     +'<button class="opt" style="justify-content:center;border-style:dashed" onclick="clearDay('+day+')">デフォルトに戻す（'+(defaultStatus(new Date(Y,M,day).getDay())==="open"?"営業":"定休日")+'）</button>');
 }
+function editHours(day){
+  var ov=data.days[day]||{}; var st=statusOf(day);
+  var lunch = st==="custom"?(ov.lunch||""):(st==="noon"?"":LUNCH);
+  var dinner = st==="custom"?(ov.dinner||""):(st==="eve"?"":DINNER);
+  openModal('<h3>'+(M+1)+'/'+day+' 時間を変更</h3>'
+    +'<label style="font-size:13px;color:var(--sub)">昼の時間（空欄＝昼休み）</label><input id="h_lunch" class="hin" value="'+lunch+'" placeholder="例：11:00〜13:00">'
+    +'<label style="font-size:13px;color:var(--sub);margin-top:10px;display:block">夜の時間（空欄＝夜休み）</label><input id="h_dinner" class="hin" value="'+dinner+'" placeholder="例：17:00〜20:00">'
+    +'<button class="opt" style="justify-content:center;background:var(--brand);color:#fff;border:0;margin-top:14px" onclick="saveHours('+day+')">保存</button>'
+    +'<button class="opt" style="justify-content:center;border-style:dashed" onclick="pick('+day+')">戻る</button>');
+}
+function saveHours(day){ var l=el("h_lunch").value.trim(), d=el("h_dinner").value.trim(); if(!l&&!d){ data.days[day]={status:"closed"}; } else { data.days[day]={status:"custom",lunch:l,dinner:d}; } save(Y,M,data); closeModal(); render(); }
 function setDay(day,v){ data.days[day]={status:v}; save(Y,M,data); closeModal(); render(); }
 function clearDay(day){ delete data.days[day]; save(Y,M,data); closeModal(); render(); }
 function chMonth(delta){ M+=delta; if(M<0){M=11;Y--;} if(M>11){M=0;Y++;} data=load(Y,M); render(); }
