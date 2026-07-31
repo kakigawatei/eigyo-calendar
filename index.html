@@ -82,16 +82,19 @@
   .toast.on{opacity:.95;}
 
   @media print{
-    @page{size:A4 landscape;margin:8mm;}
+    @page{size:A4 portrait;margin:8mm;}
     .toolbar,.hint,.toast{display:none !important;}
     .wrap{padding:0;}
-    .poster{box-shadow:none;border:1px solid #ccc;max-width:none;width:100%;flex-direction:row !important;aspect-ratio:auto;height:190mm;border-radius:0;}
-    .left{width:24% !important;flex-direction:column !important;align-items:flex-start !important;border-bottom:0 !important;border-right:1px solid #ccc !important;padding:3% 2.4% !important;}
-    .mblock{flex-direction:column !important;align-items:flex-start !important;gap:4px !important;}
-    .mnum{font-size:72px !important;} .logoimg{width:82% !important;height:auto !important;margin-top:18px !important;}
-    .note{flex-basis:auto !important;margin-top:auto !important;font-size:11px !important;}
-    .cell{min-height:0 !important;padding:5px !important;} .cell .dnum .hol{display:inline !important;margin-left:4px;}
-    .cell .hours{font-size:12px !important;} .cell .closed{font-size:15px !important;} .cell .eve{font-size:12px !important;}
+    .poster{box-shadow:none;border:1px solid #ccc;max-width:none;width:100%;flex-direction:column !important;aspect-ratio:auto;border-radius:0;}
+    .left{flex-direction:row !important;align-items:center !important;gap:16px !important;flex-wrap:wrap !important;border-right:0 !important;border-bottom:1px solid #ccc !important;padding:8px 10px !important;}
+    .mblock{flex-direction:row !important;align-items:baseline !important;gap:8px !important;}
+    .mnum{font-size:34px !important;} .men{font-size:12px !important;}
+    .logoimg{width:auto !important;height:44px !important;margin:0 !important;}
+    .note{flex-basis:100% !important;margin:2px 0 0 !important;font-size:9px !important;line-height:1.4 !important;}
+    .whead div{font-size:11px !important;padding:4px 0 !important;}
+    .grid .cell{min-height:78px !important;padding:4px 3px !important;}
+    .cell .dnum{font-size:11px !important;} .cell .dnum .hol{display:inline !important;margin-left:3px;}
+    .cell .hours{font-size:10px !important;line-height:1.3 !important;} .cell .closed{font-size:13px !important;} .cell .eve{font-size:10px !important;}
     .hf{display:inline !important;} .hm{display:none !important;}
     html,body{background:#fff;}
   }
