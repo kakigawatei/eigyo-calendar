@@ -117,7 +117,8 @@
   <div class="toolbar">
     <div class="mnav"><button class="arw" onclick="chMonth(-1)">‹</button><span id="mlabel"></span><button class="arw" onclick="chMonth(1)">›</button></div>
     <button onclick="resetMonth()">デフォルトに戻す</button>
-    <button class="act" onclick="window.print()">🖨 印刷</button>
+    <button class="act" onclick="exportPoster()">📤 スマホで印刷/保存（横）</button>
+    <button onclick="window.print()">🖨 PCで印刷</button>
     <span id="calsync" style="font-size:11px;opacity:.85">…</span>
   </div>
   <div class="hint">各日をタップ → 営業／夕方休業／休業／定休日 を選べます。基本は月・水・金・土が営業。変更したい日だけ直して「印刷」。</div>
@@ -232,10 +233,93 @@ function openModal(h){el("modalbox").innerHTML=h;el("modal").classList.add("on")
 function closeModal(){el("modal").classList.remove("on");}
 el("modal").addEventListener("click",function(e){if(e.target===this)closeModal();});
 
+/* ============================================================
+ * 横向き画像で出力（iOSの@page不具合を迂回：画像プリントは向きが焼き込まれる）
+ * ============================================================ */
+var MMPX=300/25.4; // 300dpi
+function loadImg(src){ return new Promise(function(res,rej){ var img=new Image(); img.onload=function(){res(img);}; img.onerror=rej; img.src=src; }); }
+function wrapCanvasText(ctx,text,maxWidth){ var lines=[],line=""; for(var i=0;i<text.length;i++){ var test=line+text[i]; if(ctx.measureText(test).width>maxWidth && line){ lines.push(line); line=text[i]; } else line=test; } if(line) lines.push(line); return lines; }
+// lines描画（bold=中央大きく赤太字／redIdx=何行目を赤太字に）
+function drawCellBody(ctx,cx,cy,lines,bold,redIdx){
+  if(bold){ ctx.font="900 52px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#c1121f"; ctx.fillText(lines[0],cx,cy+18); return; }
+  var lh=46; var startY=cy-((lines.length-1)*lh)/2+14;
+  lines.forEach(function(t,i){ var isRed=(i===redIdx); ctx.font=(isRed?"800 ":"600 ")+"38px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle=isRed?"#c1121f":"#1a1a1a"; ctx.fillText(t,cx,startY+i*lh); });
+}
+async function buildPosterCanvas(){
+  var W=Math.round(297*MMPX), H=Math.round(210*MMPX); // 3508 x 2480
+  var canvas=document.createElement("canvas"); canvas.width=W; canvas.height=H;
+  var ctx=canvas.getContext("2d");
+  ctx.fillStyle="#ffffff"; ctx.fillRect(0,0,W,H);
+  var COL={ink:"#2b2b2b",sub:"#7a756c",satblue:"#1565c0",satfill:"#d4e9fb",grid:"#000000"};
+  var leftW=Math.round(W*0.23); var PAD=Math.round(10*MMPX);
+  // 左パネル
+  ctx.textBaseline="alphabetic"; ctx.textAlign="left";
+  ctx.fillStyle=COL.ink; ctx.font="800 200px -apple-system,'Hiragino Sans',sans-serif";
+  ctx.fillText(("0"+(M+1)).slice(-2), PAD, PAD+200);
+  ctx.fillStyle=COL.sub; ctx.font="600 48px -apple-system,'Hiragino Sans',sans-serif";
+  ctx.fillText(MONTH_EN[M]+" "+Y, PAD, PAD+200+72);
+  try{ var logo=await loadImg("assets/logo.png"); var lw=Math.round(leftW*0.78); var lh=Math.round(lw*(logo.naturalHeight/logo.naturalWidth)); ctx.drawImage(logo,PAD,PAD+200+72+70,lw,lh); }catch(e){}
+  ctx.font="600 34px -apple-system,'Hiragino Sans','Noto Sans JP',sans-serif"; ctx.fillStyle="#333333";
+  var noteLines=wrapCanvasText(ctx,"不定期に休業することがあります。営業日の変更がありましたら googleMAP・instagram などでお伝えします。",leftW-PAD*2);
+  var nlh=60; var noteY=H-PAD-(noteLines.length-1)*nlh-30; noteLines.forEach(function(l,i){ ctx.fillText(l,PAD,noteY+i*nlh); });
+  ctx.fillStyle=COL.grid; ctx.fillRect(leftW-4,0,6,H);
+  // 右パネル 曜日ヘッダー
+  var rightX=leftW, rightW=W-leftW; var colW=rightW/7; var headH=Math.round(H*0.048);
+  ctx.textAlign="center"; ctx.font="800 46px -apple-system,'Hiragino Sans',sans-serif";
+  HEAD.forEach(function(w,i){ var cx=rightX+i*colW; if(i===5){ ctx.fillStyle=COL.satfill; ctx.fillRect(cx,0,colW,headH); } ctx.fillStyle=(i===5)?COL.satblue:"#333333"; ctx.fillText(w,cx+colW/2,headH*0.66); });
+  ctx.fillStyle=COL.grid; ctx.fillRect(rightX,0,rightW,4); ctx.fillRect(rightX,headH-3,rightW,5);
+  // グリッド
+  var first=new Date(Y,M,1); var startDow=(first.getDay()+6)%7; var dim=new Date(Y,M+1,0).getDate();
+  var weeks=Math.ceil((startDow+dim)/7); var rowH=(H-headH)/weeks;
+  for(var idx=0;idx<weeks*7;idx++){
+    var row=Math.floor(idx/7), col=idx%7; var x=rightX+col*colW, y=headH+row*rowH;
+    var day=idx-startDow+1; var valid=(day>=1&&day<=dim);
+    if(col===5){ ctx.fillStyle=COL.satfill; ctx.fillRect(x,y,colW,rowH); }
+    ctx.fillStyle=COL.grid; ctx.fillRect(x,y,colW,3); if(col>0) ctx.fillRect(x,y,3,rowH);
+    if(!valid) continue;
+    var st=statusOf(day); var ov=data.days[day]||{};
+    ctx.textAlign="left"; ctx.font="800 42px -apple-system,'Hiragino Sans',sans-serif"; ctx.fillStyle="#333333";
+    ctx.fillText(String(day),x+20,y+54);
+    ctx.textAlign="center"; var cx=x+colW/2, cy=y+rowH/2+8;
+    if(st==="custom"){ var ls=[]; if(ov.lunch)ls.push(ov.lunch); if(ov.dinner)ls.push(ov.dinner); if(ls.length)drawCellBody(ctx,cx,cy,ls,false); else drawCellBody(ctx,cx,cy,["休業"],true); }
+    else if(st==="open") drawCellBody(ctx,cx,cy,[LUNCH,DINNER],false);
+    else if(st==="eve") drawCellBody(ctx,cx,cy,[LUNCH,"夕方休業"],false,1);
+    else if(st==="noon") drawCellBody(ctx,cx,cy,["昼休業",DINNER],false,0);
+    else if(st==="closed") drawCellBody(ctx,cx,cy,["休業"],true);
+    else drawCellBody(ctx,cx,cy,["定休日"],true);
+  }
+  ctx.fillStyle=COL.grid; ctx.fillRect(W-6,0,6,H); ctx.fillRect(rightX,H-6,rightW,6);
+  return canvas;
+}
+function exportPoster(){
+  toast("画像を作成中…");
+  buildPosterCanvas().then(function(canvas){
+    canvas.toBlob(function(blob){
+      var fname="営業カレンダー_"+Y+"-"+("0"+(M+1)).slice(-2)+".png";
+      var file=new File([blob],fname,{type:"image/png"});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:"営業カレンダー"}).catch(function(){});
+        return;
+      }
+      var url=URL.createObjectURL(blob); var a=document.createElement("a"); a.href=url; a.download=fname; document.body.appendChild(a); a.click(); a.remove();
+      toast("画像を保存しました。写真アプリからプリントできます");
+    },"image/png",1);
+  }).catch(function(){ toast("画像の作成に失敗しました"); });
+}
+// デバッグ: ?canvastest でキャンバスを画面に貼って確認
+if(location.search.indexOf("canvastest")>=0){ buildPosterCanvas().then(function(c){ c.style.width="100%"; c.style.display="block"; document.querySelectorAll(".toolbar,.hint,.wrap").forEach(function(n){n.style.display="none";}); document.body.insertBefore(c, document.body.firstChild); }); }
+
 render();
 cloudPull(Y,M);
 document.addEventListener("visibilitychange",function(){ if(!document.hidden&&!el("modal").classList.contains("on")) cloudPull(Y,M); });
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").then(function(reg){
+    reg.update();
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden) reg.update(); });
+  }).catch(function(){});
+  var swRefreshed=false;
+  navigator.serviceWorker.addEventListener("controllerchange",function(){ if(swRefreshed)return; swRefreshed=true; location.reload(); });
+}
 </script>
 </body>
 </html>
