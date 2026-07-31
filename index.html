@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="営業カレンダー">
+<meta name="theme-color" content="#2f6f5e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>営業カレンダー｜アブララボ</title>
+<style>
+  :root{
+    --bg:#f4f1ea; --ink:#2b2b2b; --sub:#7a756c; --line:#dcd6c8;
+    --brand:#2f6f5e; --orange:#d9691f; --blue-bg:#e9f0f7; --paper:#fffdf8;
+    --sat:env(safe-area-inset-top,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;}
+  .toolbar{position:sticky;top:0;z-index:10;background:var(--brand);color:#fff;padding:calc(var(--sat) + 10px) 12px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .toolbar .mnav{display:flex;align-items:center;gap:14px;font-weight:800;font-size:16px;}
+  .toolbar button{border:0;border-radius:10px;padding:9px 14px;font-weight:700;font-size:14px;cursor:pointer;background:rgba(255,255,255,.16);color:#fff;}
+  .toolbar button.act{background:#fff;color:var(--brand);}
+  .toolbar .arw{background:rgba(255,255,255,.16);width:38px;height:38px;border-radius:10px;font-size:20px;}
+  .hint{max-width:1100px;margin:12px auto 0;padding:0 14px;color:var(--sub);font-size:13px;text-align:center;}
+  .wrap{padding:14px;display:flex;justify-content:center;}
+
+  /* ---- poster (printable) ---- */
+  .poster{background:var(--paper);width:100%;max-width:1100px;aspect-ratio:1.414/1;display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.06);}
+  .left{width:24%;min-width:150px;padding:3% 2.4%;border-right:1px solid var(--line);display:flex;flex-direction:column;}
+  .mnum{font-size:clamp(40px,7vw,86px);font-weight:800;line-height:.9;letter-spacing:-.02em;}
+  .men{font-size:clamp(11px,1.4vw,16px);color:var(--sub);margin-top:6px;font-weight:600;}
+  .logo{margin-top:7%;font-weight:900;font-size:clamp(15px,2.2vw,26px);letter-spacing:.04em;}
+  .logo small{display:block;font-weight:700;font-size:clamp(8px,.9vw,10px);color:var(--sub);letter-spacing:.08em;margin-top:6px;line-height:1.5;}
+  .note{margin-top:auto;font-size:clamp(9px,1.05vw,12px);color:var(--sub);line-height:1.7;}
+  .right{flex:1;display:flex;flex-direction:column;}
+  .whead{display:grid;grid-template-columns:repeat(7,1fr);}
+  .whead div{text-align:center;font-weight:700;font-size:clamp(10px,1.2vw,14px);color:var(--sub);padding:6px 0;}
+  .grid{flex:1;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;}
+  .cell{border-top:1px solid var(--line);border-left:1px solid var(--line);padding:5px 5px 3px;position:relative;cursor:pointer;min-height:0;display:flex;flex-direction:column;transition:background .15s;}
+  .cell:nth-child(7n){border-right:0;}
+  .cell.sat{background:var(--blue-bg);}
+  .cell.blank{background:#faf8f2;cursor:default;}
+  .cell .dnum{font-size:clamp(10px,1.15vw,14px);font-weight:700;color:#555;}
+  .cell .dnum .hol{color:var(--orange);font-weight:700;margin-left:4px;font-size:.82em;}
+  .cell .body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:2px;}
+  .cell .hours{font-size:clamp(9px,1.02vw,12.5px);color:#333;line-height:1.35;}
+  .cell .closed{font-size:clamp(11px,1.35vw,16px);font-weight:800;color:var(--orange);}
+  .cell .eve{font-size:clamp(9px,1.02vw,12.5px);font-weight:700;color:var(--orange);}
+  .cell:active{background:#f0ece0;}
+
+  .modal{position:fixed;inset:0;background:rgba(20,20,18,.42);display:none;align-items:flex-end;justify-content:center;z-index:50;}
+  .modal.on{display:flex;}
+  .modal .box{background:var(--paper);border-radius:20px 20px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0));width:100%;max-width:480px;}
+  .modal h3{margin:0 0 14px;font-size:17px;}
+  .opt{display:flex;align-items:center;gap:10px;width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:14px;font-size:16px;font-weight:600;cursor:pointer;margin-bottom:8px;}
+  .opt .sw{width:16px;height:16px;border-radius:50%;background:var(--line);}
+  .opt.營業 .sw,.opt.op-open .sw{background:var(--brand);}
+  .opt.op-eve .sw{background:var(--orange);}
+  .opt.op-holiday .sw,.opt.op-closed .sw{background:var(--orange);}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2a2a28;color:#fff;padding:11px 18px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;z-index:80;}
+  .toast.on{opacity:.95;}
+
+  @media print{
+    @page{size:A4 landscape;margin:8mm;}
+    .toolbar,.hint,.toast{display:none !important;}
+    .wrap{padding:0;}
+    .poster{box-shadow:none;border:1px solid #ccc;max-width:none;width:100%;aspect-ratio:auto;height:190mm;border-radius:0;}
+    html,body{background:#fff;}
+  }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="mnav"><button class="arw" onclick="chMonth(-1)">‹</button><span id="mlabel"></span><button class="arw" onclick="chMonth(1)">›</button></div>
+    <button onclick="resetMonth()">デフォルトに戻す</button>
+    <button class="act" onclick="window.print()">🖨 印刷</button>
+  </div>
+  <div class="hint">各日をタップ → 営業／夕方休業／休業／定休日 を選べます。基本は月・水・金・土が営業。変更したい日だけ直して「印刷」。</div>
+  <div class="wrap"><div class="poster" id="poster"></div></div>
+  <div class="modal" id="modal"><div class="box" id="modalbox"></div></div>
+  <div class="toast" id="toast"></div>
+
+<script>
+/* 営業カレンダー（アブララボ）Phase1 — localStorage・印刷対応 */
+var WD=["日","月","火","水","木","金","土"];
+var HEAD=["月","火","水","木","金","土","日"]; // 月曜始まり
+var MONTH_EN=["January","February","March","April","May","June","July","August","September","October","November","December"];
+var HOURS_DEFAULT=[["11:00〜14:00"],["17:00〜20:00"]]; // 2部
+var LUNCH="11:00〜14:00";
+// デフォルト曜日パターン：月(1)水(3)金(5)土(6)=営業／火(2)木(4)日(0)=定休日
+function defaultStatus(dow){ return (dow===1||dow===3||dow===5||dow===6) ? "open" : "holiday"; }
+
+var now=new Date();
+var Y=now.getFullYear(), M=now.getMonth(); // 表示中の年・月(0始)
+function keyOf(y,m){ return "eigyocal_"+y+"-"+(m+1); }
+function load(y,m){ try{var v=localStorage.getItem(keyOf(y,m));return v?JSON.parse(v):{days:{}};}catch(e){return {days:{}};} }
+function save(y,m,d){ try{localStorage.setItem(keyOf(y,m),JSON.stringify(d));}catch(e){} }
+var data=load(Y,M);
+
+function el(id){return document.getElementById(id);}
+function toast(m){var t=el("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("on");},1400);}
+
+function statusOf(day){ // returns {type, ...}
+  var ov=data.days[day];
+  var dow=new Date(Y,M,day).getDay();
+  var type = ov && ov.status ? ov.status : defaultStatus(dow);
+  return type;
+}
+function render(){
+  el("mlabel").textContent=Y+"年"+(M+1)+"月";
+  var first=new Date(Y,M,1); var startDow=(first.getDay()+6)%7; // 月曜始まりの先頭空白数
+  var dim=new Date(Y,M+1,0).getDate();
+  var cells="";
+  for(var i=0;i<startDow;i++) cells+='<div class="cell blank"></div>';
+  for(var day=1;day<=dim;day++){
+    var dow=new Date(Y,M,day).getDay();
+    var isSat=(dow===6);
+    var st=statusOf(day);
+    var body="";
+    if(st==="open") body='<div class="hours">'+LUNCH+'</div><div class="hours">17:00〜20:00</div>';
+    else if(st==="eve") body='<div class="hours">'+LUNCH+'</div><div class="eve">夕方休業</div>';
+    else if(st==="closed") body='<div class="closed">休業</div>';
+    else body='<div class="closed">定休日</div>';
+    cells+='<div class="cell'+(isSat?' sat':'')+'" onclick="pick('+day+')"><div class="dnum">'+day+'</div><div class="body">'+body+'</div></div>';
+  }
+  var poster='<div class="left"><div class="mnum">'+("0"+(M+1)).slice(-2)+'</div><div class="men">'+MONTH_EN[M]+' '+Y+'</div>'
+    +'<div class="logo">アブララボ<small>EAT IN &amp; TAKE OUT &amp; DELIVERY<br>NOODLE. ANY FOODS<br>FROM KAKIGAWATEI</small></div>'
+    +'<div class="note">不定期に休業することがあります。営業日の変更がありましたら googleMAP・instagram などでお伝えします。</div></div>'
+    +'<div class="right"><div class="whead">'+HEAD.map(function(w){return '<div>'+w+'</div>';}).join("")+'</div><div class="grid">'+cells+'</div></div>';
+  el("poster").innerHTML=poster;
+}
+function pick(day){
+  var cur=statusOf(day);
+  function opt(v,label,cls){return '<button class="opt '+cls+(cur===v?' ':'')+'" onclick="setDay('+day+',\''+v+'\')"><span class="sw"></span>'+label+(cur===v?' ✓':'')+'</button>';}
+  openModal('<h3>'+(M+1)+'/'+day+'（'+WD[new Date(Y,M,day).getDay()]+'）</h3>'
+    +opt("open","営業（11:00〜14:00・17:00〜20:00）","op-open")
+    +opt("eve","夕方休業（昼のみ営業）","op-eve")
+    +opt("closed","休業","op-closed")
+    +opt("holiday","定休日","op-holiday")
+    +'<button class="opt" style="justify-content:center;border-style:dashed" onclick="clearDay('+day+')">デフォルトに戻す（'+(defaultStatus(new Date(Y,M,day).getDay())==="open"?"営業":"定休日")+'）</button>');
+}
+function setDay(day,v){ data.days[day]={status:v}; save(Y,M,data); closeModal(); render(); }
+function clearDay(day){ delete data.days[day]; save(Y,M,data); closeModal(); render(); }
+function chMonth(delta){ M+=delta; if(M<0){M=11;Y--;} if(M>11){M=0;Y++;} data=load(Y,M); render(); }
+function resetMonth(){ if(!confirm("この月をデフォルト（月水金土=営業／火木日=定休日）に戻しますか？")) return; data={days:{}}; save(Y,M,data); render(); toast("デフォルトに戻しました"); }
+function openModal(h){el("modalbox").innerHTML=h;el("modal").classList.add("on");}
+function closeModal(){el("modal").classList.remove("on");}
+el("modal").addEventListener("click",function(e){if(e.target===this)closeModal();});
+
+render();
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});
+</script>
+</body>
+</html>
