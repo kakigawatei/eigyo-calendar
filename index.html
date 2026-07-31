@@ -154,15 +154,19 @@ function fbAuth(){if(fbTok&&Date.now()<fbExp)return Promise.resolve(fbTok);var r
 function docId(y,m){return "cal_"+y+"-"+(m+1);}
 function fsUrl(id){return "https://firestore.googleapis.com/v1/projects/"+FB.projectId+"/databases/(default)/documents/shime_docs/"+id;}
 function cloudPush(y,m){ var id=docId(y,m); setCalSync("同期中…"); clearTimeout(pushT[id]); pushT[id]=setTimeout(function(){ var v=localStorage.getItem(keyOf(y,m))||JSON.stringify({days:{}});
-  fbAuth().then(function(t){return fetch(fsUrl(id)+"?updateMask.fieldPaths=json&updateMask.fieldPaths=ts",{method:"PATCH",headers:{Authorization:"Bearer "+t,"Content-Type":"application/json"},body:JSON.stringify({fields:{json:{stringValue:v},ts:{integerValue:String(Date.now())}}})});}).then(function(r){if(!r.ok)throw 0;setCalSync("同期済");}).catch(function(){setCalSync("後で同期");}); },700); }
+  fbAuth().then(function(t){return fetch(fsUrl(id)+"?updateMask.fieldPaths=json&updateMask.fieldPaths=ts",{method:"PATCH",keepalive:true,headers:{Authorization:"Bearer "+t,"Content-Type":"application/json"},body:JSON.stringify({fields:{json:{stringValue:v},ts:{integerValue:String(Date.now())}}})});}).then(function(r){if(!r.ok)throw 0;setCalSync("同期済");}).catch(function(){setCalSync("後で同期");}); },700); }
 function cloudPull(y,m){ var id=docId(y,m); setCalSync("同期中…");
   return fbAuth().then(function(t){return fetch(fsUrl(id),{headers:{Authorization:"Bearer "+t}});}).then(function(r){if(r.status===404)return null;if(!r.ok)throw 0;return r.json();}).then(function(d){
     var js=(d&&d.fields&&d.fields.json)?d.fields.json.stringValue:null;
     if(js===null){ var local=localStorage.getItem(keyOf(y,m)); if(local){ cloudPush(y,m); } else { setCalSync("同期済"); } return; }
     var cur=localStorage.getItem(keyOf(y,m));
-    if(cur!==js){ try{localStorage.setItem(keyOf(y,m),js);}catch(e){} if(y===Y&&m===M){ data=load(Y,M); render(); } }
+    if(cur!==js){
+      if(calEmpty(js) && !calEmpty(cur)){ cloudPush(y,m); } /* 空クラウドでローカルの編集を消さない→逆にpush */
+      else { try{localStorage.setItem(keyOf(y,m),js);}catch(e){} if(y===Y&&m===M){ data=load(Y,M); render(); } }
+    }
     setCalSync("同期済");
   }).catch(function(){ setCalSync("オフライン"); }); }
+function calEmpty(s){ try{var v=JSON.parse(s); return !v||!v.days||Object.keys(v.days).length===0;}catch(e){return true;} }
 function setCalSync(t){ var e=el("calsync"); if(e)e.textContent=t; }
 
 function el(id){return document.getElementById(id);}
